@@ -4,7 +4,6 @@
 //
 //  Created by Eezy Mongo on 2025-10-22.
 //
-
 import SwiftUI
 
 struct ContentView: View {
@@ -17,7 +16,7 @@ struct ContentView: View {
     @State private var folderToUnlock: Folder?
     @State private var wrongPasswordAlert = false
     @State private var searchText = ""
-
+    
     var body: some View {
         HStack(spacing: 0) {
             // MARK: Sidebar
@@ -27,7 +26,7 @@ struct ContentView: View {
                 showCreateFolder: $showCreateFolder,
                 onFolderSelected: handleFolderSelection
             )
-
+            
             // MARK: Main Content
             mainContent
         }
@@ -40,16 +39,22 @@ struct ContentView: View {
         }
         
         // MARK: Unlock Sheet
-        .sheet(isPresented: $showUnlockSheet) {
-            if let folder = folderToUnlock {
-                DiaryUnlockView(
-                    folder: folder,
-                    onUnlock: { enteredPassword in
-                        handleUnlock(folder: folder, enteredPassword: enteredPassword)
+        .sheet(item: $folderToUnlock) { folder in
+            DiaryUnlockView(
+                isPresented: Binding(
+                    get: { folderToUnlock != nil },
+                    set: { if !$0 { folderToUnlock = nil } }
+                ),
+                isUnlocked: Binding(
+                    get: { selectedFolderID == folder.id },
+                    set: { unlocked in
+                        if unlocked {
+                            selectedFolderID = folder.id
+                            folderToUnlock = nil
+                        }
                     }
                 )
-                .presentationDetents([.height(220)])
-            }
+            )
         }
         
         // MARK: Wrong Password Alert
@@ -58,7 +63,7 @@ struct ContentView: View {
         }
     }
     
-    // MARK: Main Content View
+    // MARK: Main Content
     private var mainContent: some View {
         VStack {
             if let selectedFolder = viewModel.folders.first(where: { $0.id == selectedFolderID }) {
@@ -82,29 +87,18 @@ struct ContentView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.white)
     }
-}
-
-// MARK: - Logic
-extension ContentView {
+    
+    // MARK: - Logic
     private func handleFolderSelection(_ folder: Folder) {
         if folder.isDiary {
             folderToUnlock = folder
-            showUnlockSheet = true
         } else {
             selectedFolderID = folder.id
-        }
-    }
-    
-    private func handleUnlock(folder: Folder, enteredPassword: String) {
-        showUnlockSheet = false
-        
-        if folder.password == enteredPassword {
-            selectedFolderID = folder.id
-        } else {
-            wrongPasswordAlert = true
         }
     }
 }
+
 #Preview {
     ContentView()
 }
+    

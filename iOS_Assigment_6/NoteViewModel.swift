@@ -17,7 +17,7 @@ final class NoteViewModel: ObservableObject {
         folders = [
             Folder(name: "All my notes"),
             Folder(name: "Mathematics Classes"),
-            Folder(name: "Diary", isDiary: true, password: "1234")
+            Folder(name: "My Diary", isDiary: true, password: "1234")
         ]
 
         quickNotes = [
