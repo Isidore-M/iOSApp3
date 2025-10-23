@@ -20,6 +20,13 @@ struct ContentView: View {
     @State private var newNoteTitle = ""
     @State private var newNoteContent = ""
     
+    init() {
+        // Preselect "All my notes" folder if it exists
+        if let allNotesFolder = NoteViewModel().folders.first(where: { $0.name == "All my notes" }) {
+            _selectedFolderID = State(initialValue: allNotesFolder.id)
+        }
+    }
+    
     var body: some View {
         HStack(spacing: 0) {
             // MARK: Sidebar
@@ -139,4 +146,3 @@ struct ContentView: View {
 #Preview {
     ContentView()
 }
-
