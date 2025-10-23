@@ -11,11 +11,10 @@ import SwiftUI
 struct DiaryUnlockView: View {
     @Binding var isPresented: Bool        // Controls whether the sheet is shown
     @Binding var isUnlocked: Bool         // Updates main view when unlocked
+    var correctPassword: String           // Dynamic password from the folder
+
     @State private var password: String = ""  // User input
     @State private var showError: Bool = false
-    
-    // Replace with your diary password
-    private let correctPassword = "1234"
     
     var body: some View {
         NavigationView {
@@ -28,7 +27,7 @@ struct DiaryUnlockView: View {
                     .padding()
                     .background(Color(.systemGray6))
                     .cornerRadius(10)
-                    .keyboardType(.numberPad)
+                    .keyboardType(.default)
                 
                 if showError {
                     Text("Incorrect password")
@@ -39,6 +38,8 @@ struct DiaryUnlockView: View {
                 HStack {
                     Button(action: {
                         isPresented = false
+                        password = ""
+                        showError = false
                     }) {
                         Text("Cancel")
                             .foregroundColor(.red)
@@ -52,6 +53,8 @@ struct DiaryUnlockView: View {
                         if password == correctPassword {
                             isUnlocked = true
                             isPresented = false
+                            password = ""
+                            showError = false
                         } else {
                             showError = true
                         }
@@ -74,6 +77,10 @@ struct DiaryUnlockView: View {
 
 struct DiaryUnlockView_Previews: PreviewProvider {
     static var previews: some View {
-        DiaryUnlockView(isPresented: .constant(true), isUnlocked: .constant(false))
+        DiaryUnlockView(
+            isPresented: .constant(true),
+            isUnlocked: .constant(false),
+            correctPassword: "1234"
+        )
     }
 }

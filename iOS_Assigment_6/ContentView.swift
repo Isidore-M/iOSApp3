@@ -12,10 +12,13 @@ struct ContentView: View {
     // UI States
     @State private var selectedFolderID: UUID?
     @State private var showCreateFolder = false
-    @State private var showUnlockSheet = false
     @State private var folderToUnlock: Folder?
     @State private var wrongPasswordAlert = false
-    @State private var searchText = ""
+    
+    // New Note Sheet
+    @State private var showNewNoteSheet = false
+    @State private var newNoteTitle = ""
+    @State private var newNoteContent = ""
     
     var body: some View {
         HStack(spacing: 0) {
@@ -24,11 +27,31 @@ struct ContentView: View {
                 viewModel: viewModel,
                 selectedFolderID: $selectedFolderID,
                 showCreateFolder: $showCreateFolder,
+                showNewNoteSheet: $showNewNoteSheet,
+                newNoteTitle: $newNoteTitle,
+                newNoteContent: $newNoteContent,
                 onFolderSelected: handleFolderSelection
             )
             
             // MARK: Main Content
-            mainContent
+            if let folderID = selectedFolderID,
+               let folder = viewModel.folders.first(where: { $0.id == folderID }) {
+                NotesDashboardView(viewModel: viewModel, selectedFolder: folder)
+            } else {
+                VStack(spacing: 20) {
+                    Image(systemName: "pencil.and.outline")
+                        .font(.system(size: 70))
+                        .foregroundColor(.orange.opacity(0.8))
+                    
+                    Text("Welcome to Be.note ✨")
+                        .font(.title).bold()
+                    
+                    Text("Select a folder or start a quick note to begin writing.")
+                        .foregroundColor(.gray)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color.white)
+            }
         }
         .edgesIgnoringSafeArea(.all)
         
@@ -51,41 +74,56 @@ struct ContentView: View {
                         if unlocked {
                             selectedFolderID = folder.id
                             folderToUnlock = nil
+                        } else {
+                            wrongPasswordAlert = true
                         }
                     }
-                )
+                ),
+                correctPassword: folder.password ?? ""
             )
+        }
+        
+        // MARK: New Note Sheet
+        .sheet(isPresented: $showNewNoteSheet) {
+            NavigationView {
+                Form {
+                    Section("Title") {
+                        TextField("Note title", text: $newNoteTitle)
+                    }
+                    Section("Content") {
+                        TextEditor(text: $newNoteContent)
+                            .frame(height: 200)
+                    }
+                }
+                .navigationTitle("New Note")
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Cancel") {
+                            showNewNoteSheet = false
+                            newNoteTitle = ""
+                            newNoteContent = ""
+                        }
+                    }
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Save") {
+                            let note = Note(title: newNoteTitle, content: newNoteContent)
+                            if let folderID = selectedFolderID {
+                                viewModel.addNote(note, to: folderID)
+                            }
+                            showNewNoteSheet = false
+                            newNoteTitle = ""
+                            newNoteContent = ""
+                        }
+                        .disabled(newNoteTitle.isEmpty)
+                    }
+                }
+            }
         }
         
         // MARK: Wrong Password Alert
         .alert("Wrong Password", isPresented: $wrongPasswordAlert) {
             Button("OK", role: .cancel) {}
         }
-    }
-    
-    // MARK: Main Content
-    private var mainContent: some View {
-        VStack {
-            if let selectedFolder = viewModel.folders.first(where: { $0.id == selectedFolderID }) {
-                NotesListView(folder: selectedFolder, viewModel: viewModel)
-            } else {
-                VStack(spacing: 20) {
-                    Image(systemName: "pencil.and.outline")
-                        .font(.system(size: 70))
-                        .foregroundColor(.orange.opacity(0.8))
-                    
-                    Text("Welcome to Be.note ✨")
-                        .font(.title).bold()
-                    
-                    Text("Select a folder or start a quick note to begin writing.")
-                        .foregroundColor(.gray)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color.white)
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.white)
     }
     
     // MARK: - Logic
@@ -101,4 +139,4 @@ struct ContentView: View {
 #Preview {
     ContentView()
 }
-    
+

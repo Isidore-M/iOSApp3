@@ -10,6 +10,9 @@ struct SidebarView: View {
     @ObservedObject var viewModel: NoteViewModel
     @Binding var selectedFolderID: UUID?
     @Binding var showCreateFolder: Bool
+    @Binding var showNewNoteSheet: Bool
+    @Binding var newNoteTitle: String
+    @Binding var newNoteContent: String
     
     var onFolderSelected: (Folder) -> Void
     
@@ -26,6 +29,7 @@ struct SidebarView: View {
             .padding(.top, 24)
 
             VStack(spacing: 10) {
+                // MARK: Folder List
                 ForEach(viewModel.folders) { folder in
                     Button {
                         onFolderSelected(folder)
@@ -36,14 +40,29 @@ struct SidebarView: View {
                             Spacer()
                         }
                         .padding(10)
-                        .background(selectedFolderID == folder.id ? Color.blue.opacity(0.14) : Color.clear)
+                        .background(selectedFolderID == folder.id ? Color.gray.opacity(0.14) : Color.clear)
                         .cornerRadius(10)
                     }
                     .buttonStyle(.plain)
                 }
 
+                // MARK: Quick Note Button
                 Button {
-                    selectedFolderID = nil
+                    // Ensure Quick Notes folder exists
+                    let noteFolder: Folder
+                    if let quickFolder = viewModel.folders.first(where: { $0.name == "Quick Notes" }) {
+                        noteFolder = quickFolder
+                    } else {
+                        let quickFolder = Folder(name: "Quick Notes")
+                        viewModel.folders.insert(quickFolder, at: 0)
+                        noteFolder = quickFolder
+                    }
+                    
+                    // Set selected folder and show new note sheet
+                    selectedFolderID = noteFolder.id
+                    newNoteTitle = ""
+                    newNoteContent = ""
+                    showNewNoteSheet = true
                 } label: {
                     HStack {
                         Image(systemName: "pencil")
@@ -55,6 +74,7 @@ struct SidebarView: View {
                     .cornerRadius(10)
                 }
 
+                // MARK: Add Folder Button
                 Button {
                     showCreateFolder = true
                 } label: {
