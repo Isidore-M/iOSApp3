@@ -10,11 +10,9 @@ struct SidebarView: View {
     @ObservedObject var viewModel: NoteViewModel
     @Binding var selectedFolderID: UUID?
     @Binding var showCreateFolder: Bool
-    @Binding var showNewNoteSheet: Bool
-    @Binding var newNoteTitle: String
-    @Binding var newNoteContent: String
     
     var onFolderSelected: (Folder) -> Void
+    var onQuickNoteTapped: () -> Void // new closure for Quick Note button
     
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
@@ -29,7 +27,7 @@ struct SidebarView: View {
             .padding(.top, 24)
 
             VStack(spacing: 10) {
-                // MARK: Folder List
+                // Folder buttons
                 ForEach(viewModel.folders) { folder in
                     Button {
                         onFolderSelected(folder)
@@ -46,23 +44,9 @@ struct SidebarView: View {
                     .buttonStyle(.plain)
                 }
 
-                // MARK: Quick Note Button
+                // Quick Note button
                 Button {
-                    // Ensure Quick Notes folder exists
-                    let noteFolder: Folder
-                    if let quickFolder = viewModel.folders.first(where: { $0.name == "Quick Notes" }) {
-                        noteFolder = quickFolder
-                    } else {
-                        let quickFolder = Folder(name: "Quick Notes")
-                        viewModel.folders.insert(quickFolder, at: 0)
-                        noteFolder = quickFolder
-                    }
-                    
-                    // Set selected folder and show new note sheet
-                    selectedFolderID = noteFolder.id
-                    newNoteTitle = ""
-                    newNoteContent = ""
-                    showNewNoteSheet = true
+                    onQuickNoteTapped()
                 } label: {
                     HStack {
                         Image(systemName: "pencil")
@@ -74,7 +58,7 @@ struct SidebarView: View {
                     .cornerRadius(10)
                 }
 
-                // MARK: Add Folder Button
+                // Add Folder button
                 Button {
                     showCreateFolder = true
                 } label: {

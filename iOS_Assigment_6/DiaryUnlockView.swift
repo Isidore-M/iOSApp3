@@ -22,6 +22,8 @@ struct DiaryUnlockView: View {
                 
                 Text("Enter Diary Password")
                     .font(.headline)
+                Text("If it is your first time opening this just type 1234")
+                    .font(.callout)
                 
                 SecureField("Password", text: $password)
                     .padding()

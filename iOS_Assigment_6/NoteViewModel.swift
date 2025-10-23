@@ -40,7 +40,10 @@ final class NoteViewModel: ObservableObject {
     
     // MARK: - Add Note to a Folder
     func addNote(_ note: Note, to folderID: UUID) {
-        guard let idx = folders.firstIndex(where: { $0.id == folderID }) else { return }
+        guard let idx = folders.firstIndex(where: { $0.id == folderID }) else {
+            print("Error: Folder with id \(folderID) not found!")
+            return
+        }
         folders[idx].notes.append(note)
     }
 }

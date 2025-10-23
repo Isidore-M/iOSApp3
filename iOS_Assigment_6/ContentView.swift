@@ -5,6 +5,9 @@
 //  Created by Eezy Mongo on 2025-10-22.
 //
 import SwiftUI
+import Foundation
+
+import SwiftUI
 
 struct ContentView: View {
     @StateObject private var viewModel = NoteViewModel()
@@ -12,53 +15,28 @@ struct ContentView: View {
     // UI States
     @State private var selectedFolderID: UUID?
     @State private var showCreateFolder = false
+    @State private var showUnlockSheet = false
     @State private var folderToUnlock: Folder?
     @State private var wrongPasswordAlert = false
     
-    // New Note Sheet
+    // New Note
     @State private var showNewNoteSheet = false
     @State private var newNoteTitle = ""
     @State private var newNoteContent = ""
     
-    init() {
-        // Preselect "All my notes" folder if it exists
-        if let allNotesFolder = NoteViewModel().folders.first(where: { $0.name == "All my notes" }) {
-            _selectedFolderID = State(initialValue: allNotesFolder.id)
-        }
-    }
-    
     var body: some View {
         HStack(spacing: 0) {
+            
             // MARK: Sidebar
             SidebarView(
                 viewModel: viewModel,
                 selectedFolderID: $selectedFolderID,
                 showCreateFolder: $showCreateFolder,
-                showNewNoteSheet: $showNewNoteSheet,
-                newNoteTitle: $newNoteTitle,
-                newNoteContent: $newNoteContent,
-                onFolderSelected: handleFolderSelection
+                onFolderSelected: handleFolderSelection, onQuickNoteTapped: handleQuickNote
             )
             
             // MARK: Main Content
-            if let folderID = selectedFolderID,
-               let folder = viewModel.folders.first(where: { $0.id == folderID }) {
-                NotesDashboardView(viewModel: viewModel, selectedFolder: folder)
-            } else {
-                VStack(spacing: 20) {
-                    Image(systemName: "pencil.and.outline")
-                        .font(.system(size: 70))
-                        .foregroundColor(.orange.opacity(0.8))
-                    
-                    Text("Welcome to Be.note ✨")
-                        .font(.title).bold()
-                    
-                    Text("Select a folder or start a quick note to begin writing.")
-                        .foregroundColor(.gray)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color.white)
-            }
+            mainContent
         }
         .edgesIgnoringSafeArea(.all)
         
@@ -82,12 +60,16 @@ struct ContentView: View {
                             selectedFolderID = folder.id
                             folderToUnlock = nil
                         } else {
-                            wrongPasswordAlert = true
+                            folderToUnlock = nil
                         }
                     }
-                ),
-                correctPassword: folder.password ?? ""
+                ), correctPassword: "1234"
             )
+        }
+        
+        // MARK: Wrong Password Alert
+        .alert("Wrong Password", isPresented: $wrongPasswordAlert) {
+            Button("OK", role: .cancel) {}
         }
         
         // MARK: New Note Sheet
@@ -113,33 +95,81 @@ struct ContentView: View {
                     }
                     ToolbarItem(placement: .confirmationAction) {
                         Button("Save") {
-                            let note = Note(title: newNoteTitle, content: newNoteContent)
-                            if let folderID = selectedFolderID {
-                                viewModel.addNote(note, to: folderID)
-                            }
-                            showNewNoteSheet = false
-                            newNoteTitle = ""
-                            newNoteContent = ""
+                            createNewNote()
                         }
                         .disabled(newNoteTitle.isEmpty)
                     }
                 }
             }
         }
-        
-        // MARK: Wrong Password Alert
-        .alert("Wrong Password", isPresented: $wrongPasswordAlert) {
-            Button("OK", role: .cancel) {}
+    }
+    
+    // MARK: Main Content
+    private var mainContent: some View {
+        VStack {
+            if let folder = viewModel.folders.first(where: { $0.id == selectedFolderID }) {
+                NotesDashboardView(viewModel: viewModel, selectedFolder: folder)
+            } else {
+                // Default welcome screen
+                VStack(spacing: 20) {
+                    Image(systemName: "pencil.and.outline")
+                        .font(.system(size: 70))
+                        .foregroundColor(.orange.opacity(0.8))
+                    
+                    Text("Welcome to Be.note ✨")
+                        .font(.title).bold()
+                    
+                    Text("Select a folder or start a quick note to begin writing.")
+                        .foregroundColor(.gray)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color.white)
+                .onAppear {
+                    // Default select "All my notes"
+                    if let allNotes = viewModel.folders.first(where: { $0.name == "All my notes" }) {
+                        selectedFolderID = allNotes.id
+                    }
+                }
+            }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.white)
     }
     
     // MARK: - Logic
+    
     private func handleFolderSelection(_ folder: Folder) {
         if folder.isDiary {
             folderToUnlock = folder
         } else {
             selectedFolderID = folder.id
         }
+    }
+    
+    private func handleQuickNote() {
+        showNewNoteSheet = true
+    }
+    
+    private func createNewNote() {
+        let note = Note(title: newNoteTitle, content: newNoteContent)
+        
+        // Check if "Quick Notes" folder exists
+        if let quickFolder = viewModel.folders.first(where: { $0.name == "Quick Notes" }) {
+            viewModel.addNote(note, to: quickFolder.id)
+            selectedFolderID = quickFolder.id
+        } else {
+            // Create folder first
+            viewModel.createFolder(name: "Quick Notes")
+            if let quickFolder = viewModel.folders.first(where: { $0.name == "Quick Notes" }) {
+                viewModel.addNote(note, to: quickFolder.id)
+                selectedFolderID = quickFolder.id
+            }
+        }
+        
+        // Reset
+        showNewNoteSheet = false
+        newNoteTitle = ""
+        newNoteContent = ""
     }
 }
 
